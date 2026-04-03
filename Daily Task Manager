@@ -1,10 +1,11 @@
 """
-Daily Operating System
+Daily Task Manager-
 A simple CLI-based task manager using Python.
 Features:
 - Add tasks
 - Delete tasks
 - Mark tasks as done
+- Status
 - Save tasks using JSON
 """
 
