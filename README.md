@@ -1,2 +1,2 @@
 # Daily-Task-Manager
-A simple CLI-based daily task manager built with Python using JSON for persistent storage.
+A Python CLI task manager to track daily tasks with priority, status, and JSON-based persistent storage.
