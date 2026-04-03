@@ -1,0 +1,189 @@
+"""
+Daily Operating System
+A simple CLI-based task manager using Python.
+Features:
+- Add tasks
+- Delete tasks
+- Mark tasks as done
+- Save tasks using JSON
+"""
+
+import json
+from datetime import date
+
+today = str(date.today())
+tasks = []
+all_data = []
+name = None
+
+
+def sync_tasks():
+    today_entry = next((d for d in all_data if d["date"] == today), None)
+    if today_entry:
+        today_entry["tasks"] = tasks
+    else:
+        all_data.append({"date": today, "tasks": tasks})
+
+
+def save_data():
+    sync_tasks()
+    with open("data.json", "w") as f:
+        json.dump(all_data, f, indent=4)
+        #for entry in all_data:
+            #f.write(json.dumps(entry, separators=(',', ':')) + "\n")
+
+
+def load_data():
+    global tasks, all_data
+    try:
+        with open("data.json", "r") as f:
+            text = f.read().strip()
+
+        if not text:
+            all_data = [{"date": today, "tasks": []}]
+        elif text.startswith("["):
+            
+            data = json.loads(text)
+            if isinstance(data, dict):
+                all_data = [data]
+            else:
+                all_data = data
+        else:
+            
+            all_data = [json.loads(line) for line in text.splitlines() if line.strip()]
+
+        today_entry = next((d for d in all_data if d["date"] == today), None)
+        if today_entry:
+            tasks = today_entry["tasks"]
+        else:
+            tasks = []
+            all_data.append({"date": today, "tasks": tasks})
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        all_data = [{"date": today, "tasks": []}]
+        tasks = []
+
+
+load_data()
+
+def add_task(name, priority="Medium"):
+    if not name.strip():
+        return "Task name cannot be empty!"
+
+    tasks.append({
+        "name": name,
+        "done": False,
+        "priority": priority,
+        #"Due": Due
+    })
+
+    save_data()
+    return f"Added: {name} ({priority})"
+
+
+def show_tasks():
+    if not tasks:
+        print("No tasks yet!")
+        return
+
+    print("\nYour today's tasks:")
+    for i, task in enumerate(tasks, 1):
+        status = "Done" if task["done"] else "Pending"
+        print(f"{i}. {task['name']} | [{status}] | {task['priority']}")
+
+
+def delete_task():
+    show_tasks()
+    if not tasks:
+        return
+    try:
+        num = int(input("Enter task no. to delete: "))
+        removed_task = tasks.pop(num - 1)
+        save_data()
+        print(f"Deleted: {removed_task['name']}")
+    except (ValueError, IndexError):
+        print("Invalid input!")
+
+
+def mark_done():
+    show_tasks()
+    if not tasks:
+        return
+    try:
+        num = int(input("Enter task no. to mark done: "))
+        tasks[num - 1]["done"] = True
+        save_data()
+        print("Task completed.")
+    except (ValueError, IndexError):
+        print("Invalid input!")
+
+def status():
+    total = len(tasks)
+    done = sum(1 for task in tasks if task["done"])
+    pending = total - done
+    return total, done, pending
+
+
+def main():
+    global name
+    print(today)
+    name = input("Enter your name: ")
+    print(f"Hello {name}, Welcome to the Daily System.")
+
+    while True:
+        print("\nChoose an option:")
+        print("1. Show tasks")
+        print("2. Add task")
+        print("3. Delete task")
+        print("4. Mark task done")
+        print("5. Status")
+        print("6. Exit")
+
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            show_tasks()
+        elif choice == "2":
+            task = input("Enter new task: ")
+            priority = input("Priority (High/Medium/Low): ")
+            #Due = input("Due date (YYYY-MM-DD or leave blank): ")
+            #Due = Due if Due else None
+            print(add_task(task, priority))
+        
+        elif choice == "3":
+            delete_task()
+        elif choice == "4":
+            mark_done()
+        elif choice == "5":
+            total, done, pending = status()
+            print(f"Total: {total}, Done: {done}, Pending: {pending}")
+
+            
+        elif choice == "6":
+            pending_tasks = [task for task in tasks if not task["done"]]
+            if pending_tasks:
+                print(f" Hey {name}, you have some pending tasks:")
+                for i, task in enumerate(pending_tasks, 1):
+                    print(f"{i}. {task['name']}")
+
+                while True:
+                    confirm = input("Do you still want to Exit? (YES/NO)\n").strip().upper()
+                    if confirm == "YES":
+                        save_data()
+                        print("Goodbye!")
+                        exit()
+                    elif confirm == "NO":
+                        print("Nice! Complete your pending tasks.")
+                        break
+                    else:
+                        print("Invalid input! Please type YES or NO.")
+                        continue
+            else:
+                save_data()
+                print("All tasks completed. Goodbye!")
+                exit()
+        else:
+            print("Invalid choice!")
+
+
+if __name__ == "__main__":
+    main()
